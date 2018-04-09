@@ -5,6 +5,9 @@
 #define TINT_BIAS 1.0
 
 int getNFromArguments(int argc, char** argv);
+int getRPositionForPixel(int x, int y, int width);
+int getGPositionForPixel(int x, int y, int width);
+int getBPositionForPixel(int x, int y, int width);
 int compute_julia_pixel(int x, int y, int width, int height, float tint_bias, unsigned char *rgb);
 int write_bmp_header(FILE *f, int width, int height);
 
@@ -20,13 +23,9 @@ int main (int argc, char **argv) {
     for (y=0; y < height; y++) {
         for (x=0; x < width; x++) {
             compute_julia_pixel(x, y, width, height, TINT_BIAS, rgb);
-            int pixel = x + (y * width);
-            int rPosition = (x*3 + 0) + (y * width*3);
-            int gPosition = (x*3 + 1) + (y * width*3);
-            int bPosition = (x*3 + 2) + (y * width*3);
-            juliaElements[rPosition] = rgb[0];
-            juliaElements[gPosition] = rgb[1];
-            juliaElements[bPosition] = rgb[2];
+            juliaElements[getRPositionForPixel(x, y, width)] = rgb[0];
+            juliaElements[getGPositionForPixel(x, y, width)] = rgb[1];
+            juliaElements[getBPositionForPixel(x, y, width)] = rgb[2];
         }
     }
 
@@ -43,6 +42,10 @@ int getNFromArguments(int argc, char **argv) {
     }
     return atoi(argv[1]);
 }
+
+int getRPositionForPixel(int x, int y, int width) { return (x*3) + (y*width*3); }
+int getGPositionForPixel(int x, int y, int width) { return (x*3 + 1) + (y*width*3); }
+int getBPositionForPixel(int x, int y, int width) { return (x*3 + 2) + (y*width*3); }
 
 int compute_julia_pixel(int x, int y, int width, int height, float tint_bias, unsigned char *rgb) {
 
