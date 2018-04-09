@@ -9,8 +9,11 @@ int getNFromArguments(int argc, char** argv);
 int getRPositionForPixel(int x, int y, int width);
 int getGPositionForPixel(int x, int y, int width);
 int getBPositionForPixel(int x, int y, int width);
+int convertGlobalToLocalPosition(int position, int width, int height);
 int compute_julia_pixel(int x, int y, int width, int height, float tint_bias, unsigned char *rgb);
 int write_bmp_header(FILE *f, int width, int height);
+
+int rank, size;
 
 int main(int argc, char** argv) {
     MPI_Init(&argc, &argv);
@@ -19,7 +22,6 @@ int main(int argc, char** argv) {
     int width = n*2;
     int height = n;
 
-    int rank, size;
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     MPI_Comm_size(MPI_COMM_WORLD, &size);
 
@@ -28,37 +30,44 @@ int main(int argc, char** argv) {
     int lastRow = rowsPerProcess * (rank+1) -1;
     printf("I am process %d out of %d. I will compute rows [%d,%d]\n", rank, size, firstRow, lastRow);
 
-    unsigned char* juliaElements = malloc(n * (2 * n) * 3 * sizeof(char));
+    int localHeight = lastRow - firstRow;
+    unsigned char* juliaElements = malloc(localHeight * width * 3 * sizeof(char));
     unsigned char* rgb = malloc(3 * sizeof(char));
 
     int x, y;
-    for (y = firstRow; y <= lastRow; y++) {
+    for (y = 0; y < rowsPerProcess; y++) {
         for (x = 0; x < width; x++) {
-            compute_julia_pixel(x, y, width, height, TINT_BIAS, rgb);
+            int globalY = y + firstRow;
+            compute_julia_pixel(x, globalY, width, height, TINT_BIAS, rgb);
             juliaElements[getRPositionForPixel(x, y, width)] = rgb[0];
             juliaElements[getGPositionForPixel(x, y, width)] = rgb[1];
             juliaElements[getBPositionForPixel(x, y, width)] = rgb[2];
         }
     }
 
+    printf("********** %d finished calculating **********\n", rank);
+
+    char *go = malloc(sizeof(char));
     if (rank == 0) {
+        printf("[%d] writing...\n", rank);
         FILE *outputFile = fopen("output.bmp", "wb");
         write_bmp_header(outputFile, width, height);
-        fwrite(&juliaElements[firstRow*width*3], sizeof(char)*3, (lastRow-firstRow)*width, outputFile);
+        fwrite(juliaElements, sizeof(char)*3, localHeight*width, outputFile);
         fclose(outputFile);
-        char go = 42;
-        MPI_Send(&go, 1, MPI_CHAR, rank+1, 0, MPI_COMM_WORLD);
+        *go = 42;
+        printf("[%d] done.\n", rank);
+        MPI_Send(go, 1, MPI_CHAR, rank+1, 0, MPI_COMM_WORLD);
     } else {
-        char go;
+        printf("[%d] waiting...\n", rank);
         MPI_Status status;
-        MPI_Recv(&go, 1, MPI_CHAR, rank-1, 0, MPI_COMM_WORLD, &status);
-        if (go == 42) {
-            FILE *outputFile = fopen("output.bmp", "ab");
-            fwrite(&juliaElements[firstRow*width*3], sizeof(char)*3, (lastRow-firstRow)*width, outputFile);
-            fclose(outputFile);
-            if(rank != size-1) {
-                MPI_Send(&go, 1, MPI_CHAR, rank+1, 0, MPI_COMM_WORLD);
-            }
+        MPI_Recv(go, 1, MPI_CHAR, rank-1, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
+        printf("[%d] received...\n", rank);
+        FILE *outputFile = fopen("output.bmp", "ab");
+        fwrite(juliaElements, sizeof(char)*3, localHeight*width, outputFile);
+        fclose(outputFile);
+        printf("[%d] done.\n", rank);
+        if(rank != size-1) {
+            MPI_Send(&go, 1, MPI_CHAR, rank+1, 0, MPI_COMM_WORLD);
         }
     }
 
@@ -76,6 +85,11 @@ int getNFromArguments(int argc, char **argv) {
 int getRPositionForPixel(int x, int y, int width) { return (x*3) + (y*width*3); }
 int getGPositionForPixel(int x, int y, int width) { return (x*3 + 1) + (y*width*3); }
 int getBPositionForPixel(int x, int y, int width) { return (x*3 + 2) + (y*width*3); }
+
+int convertGlobalToLocalPosition(int position, int width, int height) {
+    int rowsToSubtract = (height / size) * rank;
+    return position - (rowsToSubtract * width * rank);
+}
 
 int compute_julia_pixel(int x, int y, int width, int height, float tint_bias, unsigned char *rgb) {
 
