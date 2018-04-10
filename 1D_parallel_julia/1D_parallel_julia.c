@@ -30,7 +30,7 @@ int main(int argc, char** argv) {
     int lastRow = rowsPerProcess * (rank+1) -1;
     printf("I am process %d out of %d. I will compute rows [%d,%d]\n", rank, size, firstRow, lastRow);
 
-    int localHeight = lastRow - firstRow;
+    int localHeight = lastRow-firstRow + 1;
     unsigned char* juliaElements = malloc(localHeight * width * 3 * sizeof(char));
     unsigned char* rgb = malloc(3 * sizeof(char));
 
@@ -38,6 +38,7 @@ int main(int argc, char** argv) {
     for (y = 0; y < rowsPerProcess; y++) {
         for (x = 0; x < width; x++) {
             int globalY = y + firstRow;
+            // printf("Process %d will compute coordinate (%d,%d) at local memory (%d,%d)\n", rank, x, globalY, x, y);
             compute_julia_pixel(x, globalY, width, height, TINT_BIAS, rgb);
             juliaElements[getRPositionForPixel(x, y, width)] = rgb[0];
             juliaElements[getGPositionForPixel(x, y, width)] = rgb[1];
@@ -46,6 +47,7 @@ int main(int argc, char** argv) {
     }
 
     printf("********** %d finished calculating **********\n", rank);
+    // MPI_Barrier(MPI_COMM_WORLD);
 
     char *go = malloc(sizeof(char));
     if (rank == 0) {
