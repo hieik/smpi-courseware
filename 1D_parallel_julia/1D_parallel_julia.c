@@ -49,7 +49,7 @@ int main(int argc, char** argv) {
         }
     }
     gettimeofday(&end, NULL);
-    printf("[%d] - %ld\n", rank, ((end.tv_sec*1000000+end.tv_usec)-(start.tv_sec*1000000+start.tv_usec)));
+    printf("[%d] - took %ld ms\n", rank, ((end.tv_sec*1000000+end.tv_usec)-(start.tv_sec*1000000+start.tv_usec)));
 
 
     // printf("********** %d finished calculating **********\n", rank);

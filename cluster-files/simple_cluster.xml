@@ -8,7 +8,7 @@ for this module we don't measure execution times. And this way,
 no warning is generated when running smpirun.
 -->
 <config>
-<prop id="smpi/running-power" value="1"></prop>
+<prop id="smpi/host-speed" value="1000000000"></prop>
 </config>
 
 
