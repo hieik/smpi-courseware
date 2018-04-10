@@ -2,6 +2,8 @@
 #include <stdlib.h>
 #include <math.h>
 #include <mpi.h>
+#include <sys/time.h>
+#include <time.h>
 
 #define TINT_BIAS 1.0
 
@@ -34,7 +36,8 @@ int main(int argc, char** argv) {
     unsigned char* juliaElements = malloc(localHeight * width * 3 * sizeof(char));
     unsigned char* rgb = malloc(3 * sizeof(char));
 
-    double startTime = MPI_Wtime();
+    struct timeval start, end;
+    gettimeofday(&start, NULL);
     int x, y;
     for (y = 0; y < rowsPerProcess; y++) {
         for (x = 0; x < width; x++) {
@@ -45,8 +48,8 @@ int main(int argc, char** argv) {
             juliaElements[getBPositionForPixel(x, y, width)] = rgb[2];
         }
     }
-    double endTime = MPI_Wtime();
-    printf("[%d] took %f seconds calculating.\n", rank, endTime-startTime);
+    gettimeofday(&end, NULL);
+    printf("[%d] - %ld\n", rank, ((end.tv_sec*1000000+end.tv_usec)-(start.tv_sec*1000000+start.tv_usec)));
 
 
     // printf("********** %d finished calculating **********\n", rank);
