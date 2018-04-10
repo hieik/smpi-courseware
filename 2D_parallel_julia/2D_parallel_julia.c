@@ -2,6 +2,8 @@
 #include <stdlib.h>
 #include <math.h>
 #include <mpi.h>
+#include <sys/time.h>
+#include <time.h>
 
 int getNFromArguments(int argc, char **argv);
 int getRPositionForPixel(int x, int y, int width);
@@ -44,8 +46,8 @@ int main(int argc, char **argv) {
     char* juliaElements = malloc(sizeof(char) * 3 * localWidth * localHeight);
     char* rgb = malloc(sizeof(char) * 3);
 
-    double startTime = MPI_Wtime();
-    int x, y;
+    struct timeval start, end;
+    gettimeofday(&start, NULL);    int x, y;
     for (y=0; y<localHeight; y++) {
         for (x=0; x<localWidth; x++) {
             int globalX = processX * columnsPerProcess + x;
@@ -56,8 +58,8 @@ int main(int argc, char **argv) {
             juliaElements[getBPositionForPixel(x, y, localWidth)] = rgb[2];
         }
     }
-    double endTime = MPI_Wtime();
-    printf("[%d] took %f seconds calculating.\n", rank, endTime-startTime);
+    gettimeofday(&end, NULL);
+    printf("[%d] - took %ld ms\n", rank, ((end.tv_sec*1000000+end.tv_usec)-(start.tv_sec*1000000+start.tv_usec)));
 
     // printf("********** %d finished calculating **********\n", rank);
 
