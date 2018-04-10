@@ -28,46 +28,48 @@ int main(int argc, char** argv) {
     int rowsPerProcess = height / size;
     int firstRow = rowsPerProcess * rank;
     int lastRow = rowsPerProcess * (rank+1) -1;
-    printf("I am process %d out of %d. I will compute rows [%d,%d]\n", rank, size, firstRow, lastRow);
+    // printf("I am process %d out of %d. I will compute rows [%d,%d]\n", rank, size, firstRow, lastRow);
 
     int localHeight = lastRow-firstRow + 1;
     unsigned char* juliaElements = malloc(localHeight * width * 3 * sizeof(char));
     unsigned char* rgb = malloc(3 * sizeof(char));
 
+    double startTime = MPI_Wtime();
     int x, y;
     for (y = 0; y < rowsPerProcess; y++) {
         for (x = 0; x < width; x++) {
             int globalY = y + firstRow;
-            // printf("Process %d will compute coordinate (%d,%d) at local memory (%d,%d)\n", rank, x, globalY, x, y);
             compute_julia_pixel(x, globalY, width, height, TINT_BIAS, rgb);
             juliaElements[getRPositionForPixel(x, y, width)] = rgb[0];
             juliaElements[getGPositionForPixel(x, y, width)] = rgb[1];
             juliaElements[getBPositionForPixel(x, y, width)] = rgb[2];
         }
     }
+    double endTime = MPI_Wtime();
+    printf("[%d] took %f seconds calculating.\n", rank, endTime-startTime);
 
-    printf("********** %d finished calculating **********\n", rank);
-    // MPI_Barrier(MPI_COMM_WORLD);
+
+    // printf("********** %d finished calculating **********\n", rank);
 
     char *go = malloc(sizeof(char));
     if (rank == 0) {
-        printf("[%d] writing...\n", rank);
+        // printf("[%d] writing...\n", rank);
         FILE *outputFile = fopen("output.bmp", "wb");
         write_bmp_header(outputFile, width, height);
         fwrite(juliaElements, sizeof(char)*3, localHeight*width, outputFile);
         fclose(outputFile);
         *go = 42;
-        printf("[%d] done.\n", rank);
+        // printf("[%d] done.\n", rank);
         MPI_Send(go, 1, MPI_CHAR, rank+1, 0, MPI_COMM_WORLD);
     } else {
-        printf("[%d] waiting...\n", rank);
+        // printf("[%d] waiting...\n", rank);
         MPI_Status status;
         MPI_Recv(go, 1, MPI_CHAR, rank-1, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
-        printf("[%d] received...\n", rank);
+        // printf("[%d] received...\n", rank);
         FILE *outputFile = fopen("output.bmp", "ab");
         fwrite(juliaElements, sizeof(char)*3, localHeight*width, outputFile);
         fclose(outputFile);
-        printf("[%d] done.\n", rank);
+        // printf("[%d] done.\n", rank);
         if(rank != size-1) {
             MPI_Send(&go, 1, MPI_CHAR, rank+1, 0, MPI_COMM_WORLD);
         }

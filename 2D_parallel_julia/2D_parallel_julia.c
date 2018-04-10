@@ -44,6 +44,7 @@ int main(int argc, char **argv) {
     char* juliaElements = malloc(sizeof(char) * 3 * localWidth * localHeight);
     char* rgb = malloc(sizeof(char) * 3);
 
+    double startTime = MPI_Wtime();
     int x, y;
     for (y=0; y<localHeight; y++) {
         for (x=0; x<localWidth; x++) {
@@ -55,8 +56,10 @@ int main(int argc, char **argv) {
             juliaElements[getBPositionForPixel(x, y, localWidth)] = rgb[2];
         }
     }
+    double endTime = MPI_Wtime();
+    printf("[%d] took %f seconds calculating.\n", rank, endTime-startTime);
 
-    printf("********** %d finished calculating **********\n", rank);
+    // printf("********** %d finished calculating **********\n", rank);
 
     if (rank == 0) {
         FILE *outputFile = fopen("output.bmp", "wb");
@@ -64,7 +67,7 @@ int main(int argc, char **argv) {
         fwrite(juliaElements, sizeof(char)*3, localWidth, outputFile);
         fclose(outputFile);
         int nextStep = 1;
-        printf("Sending to rank %d...\n", resolveDestinationForStep(nextStep));
+        // printf("Sending to rank %d...\n", resolveDestinationForStep(nextStep));
         MPI_Send(&nextStep, 1, MPI_INT, resolveDestinationForStep(nextStep), 0, MPI_COMM_WORLD);
         int rowsWritten = 1;
         while (rowsWritten < rowsPerProcess) {
@@ -75,7 +78,7 @@ int main(int argc, char **argv) {
             fwrite(&juliaElements[rowsWritten*localWidth*3], sizeof(char)*3, localWidth, outputFile);
             fclose(outputFile);
             nextStep = currentStep + 1;
-            printf("Sending to rank %d...\n", resolveDestinationForStep(nextStep));
+            // printf("Sending to rank %d...\n", resolveDestinationForStep(nextStep));
             MPI_Send(&nextStep, 1, MPI_INT, resolveDestinationForStep(nextStep), 0, MPI_COMM_WORLD);
             rowsWritten++;
         }
@@ -93,7 +96,7 @@ int main(int argc, char **argv) {
                 break;
             } else {
                 int nextStep = currentStep + 1;
-                printf("Sending to rank %d...\n", resolveDestinationForStep(nextStep));
+                // printf("Sending to rank %d...\n", resolveDestinationForStep(nextStep));
                 MPI_Send(&nextStep, 1, MPI_INT, resolveDestinationForStep(nextStep), 0, MPI_COMM_WORLD);
             }
         }
