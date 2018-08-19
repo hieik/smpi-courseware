@@ -51,7 +51,7 @@ int main(int argc, char *argv[])
 {
 	char cwd[PATH_MAX];
 	char edge_file[FILE_NAME];
-    char file_location[FILE_LOCATION];
+	    char file_location[FILE_LOCATION];
 	if (getcwd(cwd, sizeof(cwd)) != NULL) {
 		printf("Current working dir:%s\n", cwd);
 	} else {
@@ -66,17 +66,18 @@ int main(int argc, char *argv[])
 	strcpy(edge_file, argv[1]);
 	printf("file name is %s\n", edge_file);
 	strcat(file_location, cwd);
+	strcat(file_location, "/");
 	strcat(file_location, edge_file);
 	printf("file location is %s\n", file_location);
 	//file read operation
-/*	FILE *fp;
-	fp = fopen(file_location, "r");
+	FILE *fp;
+	fp = fopen(file_location, "r+");
 	if (fp == NULL) 
 		printf("fail to open the file\n");
 	else {
 		printf("the file is open\n");
 		fclose(fp);
-	}*/
+	}
 	struct Graph* graph = createGraph(6);
 	addEdge(graph, 0, 1);
 	addEdge(graph, 0, 2);
@@ -86,12 +87,13 @@ int main(int argc, char *argv[])
 	addEdge(graph, 2, 4);
 	addEdge(graph, 3, 4);
 	addEdge(graph, 5, 1);
-//	printGraph(graph);	
+	printGraph(graph);	
 //	bfs(graph, 0);
-//	initGraph(graph);
+	initGraph(graph);
 //	dfs(graph, 0);
 	struct Graph* spanning_tree = bfsTree(graph, 0);
-//	printGraph(spanning_tree); 
+	printGraph(spanning_tree);
+	dfs(spanning_tree, 0);
 	return 0;
 }
 
@@ -241,6 +243,7 @@ struct Graph* bfsTree(struct Graph* graph, int start_vertex)
 {
 	int vertex_num = graph->vertex_num;
 	int src = -1, dest = -1;
+	int step = 0;
 	struct Graph* spanning_tree = createGraph(vertex_num);
 	struct queue* q = createQueue();
 	graph->visited[start_vertex] = 1;
@@ -249,24 +252,22 @@ struct Graph* bfsTree(struct Graph* graph, int start_vertex)
 		printQueue(q);
 		int current_vertex = dequeue(q);
 		printf("Visited %d\n", current_vertex);
+		src = current_vertex;
 		struct node* temp = graph->adjLists[current_vertex];
 		while(temp) {
 			int adj_vertex = temp->vertex;
 			if (graph->visited[adj_vertex] == 0)	
-		{
+			{
 				graph->visited[adj_vertex] = 1;
 				enqueue(q, adj_vertex);
-			}
-			if (temp -> next != NULL) 
-			{
-				src = temp->vertex;
-				dest = temp->next->vertex;
-				printf("src=%d dest=%d\n", src,dest);
+				dest = adj_vertex;
+				printf("src=%d, dest=%d\n", src, dest);
 				addEdge(spanning_tree, src, dest);
 			}
 			temp = temp->next;
 		}
 	}
+	printf("step=%d\n", step);
 	initGraph(graph);
 	return spanning_tree;	
 }
