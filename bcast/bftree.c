@@ -51,7 +51,7 @@ int main(int argc, char *argv[])
 {
 	char cwd[PATH_MAX];
 	char edge_file[FILE_NAME];
-	    char file_location[FILE_LOCATION];
+	char file_location[FILE_LOCATION] = "platform/random_d6_64-bTrue.edges";
 	if (getcwd(cwd, sizeof(cwd)) != NULL) {
 		printf("Current working dir:%s\n", cwd);
 	} else {
@@ -65,13 +65,13 @@ int main(int argc, char *argv[])
 	}
 	strcpy(edge_file, argv[1]);
 	printf("file name is %s\n", edge_file);
-	strcat(file_location, cwd);
-	strcat(file_location, "/");
-	strcat(file_location, edge_file);
+//	strcat(file_location, cwd);
+//	strcat(file_location, "/");
+//	strcat(file_location, edge_file);
 	printf("file location is %s\n", file_location);
 	//file read operation
 	FILE *fp;
-	fp = fopen(file_location, "r+");
+	fp = fopen(file_location, "r");
 	if (fp == NULL) 
 		printf("fail to open the file\n");
 	else {
